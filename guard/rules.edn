@@ -1,0 +1,91 @@
+;; The project's own rules, as data, checked by `clojure -M:guard` and so
+;; by bin/check. Only the owner changes this file.
+;;
+;; A top-level definition may break a ban by declaring why:
+;;   (defn ^{:deviation "measured: 40x faster with a transient"} f [...] ...)
+;; Deviations are counted, and the count may not rise (guard/baseline.edn).
+{;; Source namespaces matching this are the pure core. Everything else in
+ ;; src is shell, where effects and state are allowed.
+ :core-ns-pattern "soonish\\.core(\\..+)?"
+
+ ;; Every qualified keyword in src and test must be in this registry.
+ :registry-var soonish.core.attrs/registry
+ :registry-path "src/soonish/core/attrs.clj"
+
+ ;; Qualified keywords from these namespaces need no registry entry.
+ :unregistered-keyword-namespaces #{"clj-kondo"}
+
+ ;; Besides other core namespaces, core may require only these.
+ :core-may-require #{clojure.edn clojure.math clojure.set clojure.string
+                     clojure.walk}
+
+ ;; Banned in every namespace, tests included.
+ :banned-everywhere
+ {with-redefs "pass the collaborator in as an argument instead, and test the pure function with plain values."
+  defrecord "use a plain map with attributes from the registry."
+  deftype "use a plain map. A machine-like adapter at the edge may declare a deviation."
+  definterface "use a protocol or a multimethod."
+  gen-class "only an AOT entry point needs it, and it declares a deviation."
+  proxy "use reify with a protocol, in a shell namespace."
+  eval "build data and interpret it instead."
+  load-string "build data and interpret it instead."
+  read-string "use clojure.edn/read-string, which cannot run code."
+  intern "define vars with def at the top level."}
+
+ ;; Banned in core namespaces. Core is values in, values out.
+ :banned-in-core
+ {atom "state lives in shell namespaces. Take the value as an argument."
+  swap! "state lives in shell namespaces. Return the new value instead."
+  swap-vals! "state lives in shell namespaces. Return the new value instead."
+  reset! "state lives in shell namespaces. Return the new value instead."
+  reset-vals! "state lives in shell namespaces. Return the new value instead."
+  compare-and-set! "state lives in shell namespaces."
+  add-watch "state lives in shell namespaces."
+  ref "state lives in shell namespaces."
+  dosync "state lives in shell namespaces."
+  alter "state lives in shell namespaces."
+  commute "state lives in shell namespaces."
+  ref-set "state lives in shell namespaces."
+  agent "state lives in shell namespaces."
+  send "state lives in shell namespaces."
+  send-off "state lives in shell namespaces."
+  volatile! "use reduce or iterate, or declare a deviation."
+  vswap! "use reduce or iterate, or declare a deviation."
+  vreset! "use reduce or iterate, or declare a deviation."
+  transient "allowed only behind a pure interface, with a deviation."
+  set! "nothing in core is assigned."
+  alter-var-root "nothing in core is assigned."
+  binding "pass the value in as an argument."
+  with-local-vars "use let."
+  locking "core has nothing to lock: it reads values."
+  memoize "a cache is state. Caches belong in shell namespaces."
+  future "concurrency belongs in shell namespaces."
+  promise "concurrency belongs in shell namespaces."
+  deliver "concurrency belongs in shell namespaces."
+  pmap "concurrency belongs in shell namespaces."
+  println "core has no effects. Return the information as data."
+  print "core has no effects. Return the information as data."
+  prn "core has no effects. Return the information as data."
+  pr "core has no effects. Return the information as data."
+  printf "core has no effects. Return the information as data."
+  newline "core has no effects. Return the information as data."
+  flush "core has no effects."
+  tap> "remove debugging before you finish."
+  slurp "reading is the shell's job. Take the value as an argument."
+  spit "writing is the shell's job. Return what to write as data."
+  read-line "reading is the shell's job. Take the value as an argument."
+  load-file "loading code is the shell's job."
+  doseq "doseq exists for effects, and core has none. Use for, map or reduce."
+  dotimes "dotimes exists for effects, and core has none. Use range with map or reduce."
+  run! "run! exists for effects, and core has none. Use map or reduce."
+  rand "take randomness as an argument, for example a seed or the drawn numbers."
+  rand-int "take randomness as an argument, for example a seed or the drawn numbers."
+  rand-nth "take randomness as an argument, for example a seed or the drawn numbers."
+  shuffle "take randomness as an argument, for example a seed or the drawn numbers."
+  random-sample "take randomness as an argument, for example a seed or the drawn numbers."
+  random-uuid "take ids as arguments. The shell makes them."}
+
+ ;; What the ratchet counts in src, besides deviations, dynamic vars and
+ ;; clj-kondo suppressions.
+ :ratchet {:references #{atom ref agent volatile!}
+           :loops #{loop}}}

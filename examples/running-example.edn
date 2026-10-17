@@ -1,0 +1,7 @@
+;; The running example of doc/design3.md: five tasks, with estimates in
+;; working days. The project finishes on day 13.
+{:A {:task/estimate-days 3}
+ :B {:task/estimate-days 5 :task/after #{:A}}
+ :C {:task/estimate-days 4 :task/after #{:A}}
+ :D {:task/estimate-days 2 :task/after #{:B :C}}
+ :E {:task/estimate-days 3 :task/after #{:D}}}

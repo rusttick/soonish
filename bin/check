@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Every check, in one place. Agents run it before they finish, and so does
+# the git pre-commit hook. It runs all checks, then reports which failed.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+failed=""
+run() {
+  local name=$1
+  shift
+  echo "== $name"
+  if ! "$@"; then
+    failed="$failed $name"
+  fi
+}
+
+run format clojure -M:fmt check src test guard/src
+run lint clojure -M:lint --lint src test guard/src
+run guard clojure -M:guard
+run test clojure -M:test
+
+if [ -n "$failed" ]; then
+  echo "FAILED:$failed"
+  echo "Fix the code. Never loosen a check; ask the owner if one seems wrong."
+  exit 1
+fi
+echo "All checks passed."

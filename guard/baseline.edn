@@ -1,0 +1,6 @@
+;; Written by `clojure -M:guard --update-baseline`. Only the owner runs it.
+{:deviations 0
+ :dynamic-vars 0
+ :lint-suppressions 0
+ :loops 0
+ :references 0}

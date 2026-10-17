@@ -1,0 +1,4 @@
+;; cljfmt settings. Only the owner changes this file.
+{:remove-consecutive-blank-lines? true
+ :sort-ns-references? true
+ :extra-indents {for-all [[:block 1]]}}

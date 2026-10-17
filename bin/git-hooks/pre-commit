@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Git pre-commit hook. Enable it once per clone:
+#   git config core.hooksPath bin/git-hooks
+# It runs only when the commit touches this project, so it also works
+# while the project still sits inside a larger repository.
+# It checks the working tree, not only what is staged.
+set -euo pipefail
+project=$(cd "$(dirname "$0")/../.." && pwd)
+cd "$project"
+prefix=$(git rev-parse --show-prefix)
+
+mine=$(git diff --cached --name-only | grep "^${prefix}" | sed "s|^${prefix}||" || true)
+[ -n "$mine" ] || exit 0
+
+guarded=$(printf '%s\n' "$mine" | while read -r f; do
+  if bin/protected "$f"; then echo "  $f"; fi
+done)
+if [ -n "$guarded" ]; then
+  echo "This commit changes guard-rail files. Review them yourself:"
+  echo "$guarded"
+fi
+
+exec bin/check

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Exits 0 when the path, relative to the project root, is a guard-rail
+# file that only the owner changes. The agent hooks and the pre-commit
+# hook both use this list.
+case "$1" in
+  .claude/* | bin/* | guard/* | .clj-kondo/config.edn | .cljfmt.edn | \
+    deps.edn | CONTRIBUTING.md | CLAUDE.md | src/soonish/core/attrs.clj)
+    exit 0
+    ;;
+  *)
+    exit 1
+    ;;
+esac
