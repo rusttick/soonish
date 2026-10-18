@@ -6,11 +6,23 @@
       "Bash(clojure -M:test:*)",
       "Bash(clojure -M:lint:*)",
       "Bash(clojure -M:guard)",
-      "Bash(clojure -M -m soonish.main:*)"
+      "Bash(clojure -M -m soonish.main:*)",
+      "mcp__clojure-mcp__list_nrepl_ports",
+      "mcp__clojure-mcp__paren_repair"
     ]
   },
+  "enabledMcpjsonServers": ["clojure-mcp"],
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "mcp__clojure-mcp__clojure_eval",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-eval.sh"
+          }
+        ]
+      },
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [

@@ -14,7 +14,7 @@ path method, with recorded actual dates replacing computed ones. There
 is no backward pass, no storage and no HTTP server yet.
 
 The guard-rails are in place: formatting, linting, the project's own
-rules, a ratchet, tests, git hooks and Claude Code hooks. See
+rules, a ratchet, tests and Claude Code hooks. See
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development setup
@@ -47,8 +47,9 @@ Check them:
 
 Then, from this directory:
 
-    clojure -P -M:test:lint:fmt:guard   # download every dependency once
-    bin/check                           # format, lint, guard, tests
+    clojure -P -M:test:lint:fmt:guard:nrepl   # download dependencies
+    clojure -P -T:mcp                         # and the agents' REPL tool
+    bin/check                                 # format, lint, guard, tests
 
 If formatting is the only failure, run `bin/fmt`, then `bin/check`
 again.
@@ -61,25 +62,92 @@ For a REPL with the tests on the classpath:
 
     clj -M:dev
 
-### Git hook
+### Tests
 
-Enable the pre-commit hook once per clone:
+Run everything before each commit:
 
-    git config core.hooksPath bin/git-hooks
+    bin/check
 
-It runs `bin/check` whenever a commit touches this project, and lists
-any guard-rail files the commit changes. While soonish still sits
-inside a larger repository, the setting applies to that whole
-repository, but the hook acts only on commits that touch soonish.
+It runs four checks in order, and reports at the end which failed:
+
+1. **format:** `clojure -M:fmt check src test guard/src`. Fix
+   failures with `bin/fmt`.
+2. **lint:** `clojure -M:lint --lint src test guard/src`
+3. **guard:** `clojure -M:guard`. The project's own rules: bans,
+   the attribute registry, unused public vars, and the ratchet.
+4. **test:** `clojure -M:test`. Every test in `test/`.
+
+Each line above also runs alone.
+
+The tests so far, all in `test/soonish/core/schedule_test.clj`:
+
+- `running-example-dates`: the running example of the design gives
+  A 0–3, B 3–8, C 3–7, D 8–10 and E 10–13.
+- `actual-dates-replace-computed-ones`: recorded actual starts and
+  finishes move the later tasks.
+- `problems-are-described-as-data`: unknown tasks and cycles come back
+  as data, not exceptions.
+- `the-order-puts-each-task-after-what-it-waits-for`: a property
+  test over 200 generated task networks.
+- `each-task-starts-after-what-it-waits-for`: a property test over
+  200 generated task networks.
+
+To run one namespace, or one test:
+
+    clojure -M:test -n soonish.core.schedule-test
+    clojure -M:test -v soonish.core.schedule-test/running-example-dates
+
+A failing property test prints its `:seed`. To rerun it with that
+seed, or with more cases, call the test as a function in a REPL
+(`clj -M:dev`):
+
+    (require 'soonish.core.schedule-test)
+    (soonish.core.schedule-test/each-task-starts-after-what-it-waits-for
+     1000 :seed 1792280945613)
+
+To run the program on the running example:
+
+    clojure -M -m soonish.main examples/running-example.edn
+
+It prints each task's `:schedule/start-day` and `:schedule/finish-day`.
+The last task, E, finishes on day 13.
 
 ### Coding agents
 
-Start Claude Code from this directory, so that it loads `CLAUDE.md`
-and the hooks in `.claude/settings.json`:
+Start Claude Code from this directory, so that it loads `CLAUDE.md`,
+`.mcp.json` and the hooks in `.claude/settings.json`:
 
-- edits to guard-rail files are blocked
+- edits to guard-rail files are blocked, by file tools, Bash or the
+  REPL
 - every edited Clojure file is linted at once
 - `bin/check` runs when the agent stops, if sources changed
+- the agent gets a live REPL through
+  [clojure-mcp](https://github.com/bhauman/clojure-mcp), with its
+  `:repl` profile: `clojure_eval`, `list_nrepl_ports` and
+  `paren_repair`. The agent keeps Claude Code's own file tools.
+
+clojure-mcp is pinned in `deps.edn` (alias `:mcp`), so nothing is
+installed globally. When Claude Code starts it, it starts its own
+nREPL with `clojure -M:nrepl` and stops it on exit. The first start
+downloads its dependencies, which takes a minute.
+
+Check the MCP server with `/mcp` inside Claude Code. To check it by
+hand:
+
+    clojure -T:mcp start :config-profile :repl \
+      :start-nrepl-cmd '["clojure" "-M:nrepl"]'
+
+It prints JSON-RPC lines and waits; stop it with Ctrl-C.
+
+Each `clojure_eval` asks for permission, because it runs arbitrary
+code. To allow it without asking, add
+`"mcp__clojure-mcp__clojure_eval"` to `permissions.allow` in
+`.claude/settings.local.json`, which is not committed.
+
+To connect your editor to the same REPL as the agent, use the port in
+`.nrepl-port`. To run a REPL of your own instead:
+
+    clojure -M:nrepl
 
 To let an agent edit guard-rail files for one session, start it with:
 
@@ -87,7 +155,7 @@ To let an agent edit guard-rail files for one session, start it with:
 
 ## Commands
 
-- `bin/check`: every check. It must pass before a commit.
+- `bin/check`: every check. Run it before each commit.
 - `bin/fmt`: reformat the sources.
 - `clojure -M:test`: the tests only.
 - `clojure -M:lint --lint src test guard/src`: clj-kondo only.
@@ -104,6 +172,8 @@ All versions are exact, in `deps.edn`:
 - cljfmt 0.16.6
 - test.check 1.1.3
 - cognitect test-runner v0.5.1 (git sha dfb30dd)
+- nREPL 1.8.0
+- clojure-mcp v0.6.0 (git sha 2b0213f)
 
 Tools outside `deps.edn`, as last checked:
 
@@ -116,7 +186,6 @@ Tools outside `deps.edn`, as last checked:
 - a Docker image, for arm64 (Raspberry Pi 5) and x86_64
 - an archive of every dependency, so that any version can be rebuilt
   if an upstream source disappears
-- clojure-mcp, to give agents a live REPL and bracket-aware editing
 
 ## Layout
 
@@ -126,7 +195,8 @@ Tools outside `deps.edn`, as last checked:
     test/                   tests
     examples/               example inputs
     guard/                  the project's own rules and their checker
-    bin/                    check, fmt, and the git hooks
+    bin/                    check, fmt, and the guard-rail file list
     .claude/                agent hooks and settings
+    .mcp.json               agent tools: clojure-mcp
     .clj-kondo/config.edn   linter settings
     .cljfmt.edn             formatter settings

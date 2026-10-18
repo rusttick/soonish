@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "clojure-mcp": {
+      "command": "clojure",
+      "args": [
+        "-T:mcp",
+        "start",
+        ":config-profile",
+        ":repl",
+        ":start-nrepl-cmd",
+        "[\"clojure\" \"-M:nrepl\"]"
+      ]
+    }
+  }
+}

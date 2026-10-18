@@ -6,7 +6,8 @@
   The owner, and only the owner, accepts new counts with:
 
     clojure -M:guard --update-baseline"
-  (:require [clojure.edn :as edn]
+  (:require [clj-kondo.core :as kondo]
+            [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.pprint :as pprint]
             [guard.check :as check]))
@@ -42,6 +43,11 @@
        (sort-by #(.getPath ^java.io.File %))
        (mapv #(read-file area %))))
 
+(defn- analyse
+  "clj-kondo's analysis of every definition and use in src and test."
+  []
+  (:analysis (kondo/run! {:lint ["src" "test"] :config {:analysis true}})))
+
 (defn- describe
   [{:violation/keys [path line rule message]}]
   (str path (when line (str ":" line)) "  " (name rule) "  " message))
@@ -60,6 +66,7 @@
         violations (concat (check/registry-violations rules registry)
                            (mapcat #(check/file-violations rules registry %)
                                    files)
+                           (check/unused-public-vars rules (analyse))
                            (check/ratchet-violations baseline counts))]
     (run! (comp println describe) violations)
     (run! #(println (str "Ratchet: " (name (:ratchet/measure %)) " fell to "

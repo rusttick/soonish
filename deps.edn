@@ -22,8 +22,22 @@
 
   ;; clojure -M:guard    the project's own rules, in guard/rules.edn
   :guard {:extra-paths ["guard/src"]
+          :extra-deps {clj-kondo/clj-kondo {:mvn/version "2026.08.04"}}
           :main-opts ["-m" "guard.main"]}
 
   ;; clj -M:dev    a REPL with the tests on the classpath
   :dev {:extra-paths ["test"]
-        :extra-deps {org.clojure/test.check {:mvn/version "1.1.3"}}}}}
+        :extra-deps {org.clojure/test.check {:mvn/version "1.1.3"}}}
+
+  ;; clojure -M:nrepl    an nREPL server on a free port, written to
+  ;; .nrepl-port. Agents reach it through clojure-mcp; editors can too.
+  :nrepl {:extra-paths ["test"]
+          :extra-deps {nrepl/nrepl {:mvn/version "1.8.0"}
+                       org.clojure/test.check {:mvn/version "1.1.3"}}
+          :main-opts ["-m" "nrepl.cmdline"]}
+
+  ;; clojure -T:mcp start :config-profile :repl    the agents' REPL tool.
+  ;; .mcp.json starts it; it starts the :nrepl alias above.
+  :mcp {:replace-deps {io.github.bhauman/clojure-mcp
+                       {:git/tag "v0.6.0" :git/sha "2b0213f"}}
+        :ns-default clojure-mcp.main}}}

@@ -12,6 +12,12 @@
  :registry-var soonish.core.attrs/registry
  :registry-path "src/soonish/core/attrs.clj"
 
+ ;; Every public var in src must be used somewhere in src or test, except
+ ;; these, which are used from outside: entry points, and data read by
+ ;; tools such as this guard.
+ :entry-points #{soonish.main/-main
+                 soonish.core.attrs/registry}
+
  ;; Qualified keywords from these namespaces need no registry entry.
  :unregistered-keyword-namespaces #{"clj-kondo"}
 

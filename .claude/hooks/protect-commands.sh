@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Bash: blocks commands that would get around the
 # guard-rails. It is a speed bump, not a wall. The real check is the
-# owner reviewing guard-rail changes, which the pre-commit hook lists.
+# owner reviewing guard-rail changes before each commit.
 #
 # The owner can allow it for one session:  SOONISH_OWNER_EDIT=1 claude
 set -euo pipefail
@@ -17,11 +17,9 @@ block() {
 case "$cmd" in
   *--update-baseline*)
     block "Only the owner raises the guard baseline. Tell them what rose and why." ;;
-  *--no-verify* | *core.hooksPath*)
-    block "Do not bypass the git hooks." ;;
 esac
 
-guarded='(\.claude/|bin/|guard/|\.clj-kondo/config\.edn|\.cljfmt\.edn|deps\.edn|CONTRIBUTING\.md|CLAUDE\.md|core/attrs\.clj)'
+guarded='(\.claude/|bin/|guard/|\.clj-kondo/config\.edn|\.cljfmt\.edn|deps\.edn|\.mcp\.json|CONTRIBUTING\.md|CLAUDE\.md|core/attrs\.clj)'
 writes='(sed +-i|perl +-[a-z]*i|(^|[^[:alnum:]_-])(tee|mv|cp|rm)[[:space:]]|>[^&]|git +(checkout|restore|rm|mv|stash))'
 
 if printf '%s' "$cmd" | grep -Eq "$guarded" &&

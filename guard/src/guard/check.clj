@@ -197,6 +197,34 @@
      :violation/message (str "`" attr "` needs a qualified name, a :doc"
                              " string and a :schema.")}))
 
+(defn- qualified
+  [ns-sym var-name]
+  (symbol (str ns-sym) (str var-name)))
+
+(defn unused-public-vars
+  "Public vars defined in src that nothing in src or test uses, other
+  than the entry points in the rules. A var's use of itself does not
+  count. analysis is clj-kondo's analysis of src and test."
+  [rules {:keys [var-definitions var-usages]}]
+  (let [used (set (for [usage var-usages
+                        :when (not (and (= (:from usage) (:to usage))
+                                        (= (:from-var usage) (:name usage))))]
+                    (qualified (:to usage) (:name usage))))]
+    (for [definition (sort-by (juxt :filename :row) var-definitions)
+          :let [var-sym (qualified (:ns definition) (:name definition))]
+          :when (str/starts-with? (:filename definition) "src/")
+          :when (not (:private definition))
+          :when (not (contains? used var-sym))
+          :when (not (contains? (:entry-points rules) var-sym))]
+      {:violation/path (:filename definition)
+       :violation/line (:row definition)
+       :violation/rule :var/unused
+       :violation/message (str "`" var-sym "` is public, but nothing in src"
+                               " or test uses it. Delete it if it is dead."
+                               " If something outside uses it, ask the owner"
+                               " to add it to :entry-points in"
+                               " guard/rules.edn.")})))
+
 (defn- count-symbols
   [names forms]
   (count (for [form forms

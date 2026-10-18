@@ -37,16 +37,41 @@ When a check fails, fix the code. Never loosen the check, suppress the
 warning, skip the test or weaken an assertion. If a check seems wrong,
 stop and tell the owner why.
 
+## The REPL
+
+Agents get a live REPL through clojure-mcp. Its `clojure_eval` tool
+evaluates code in an nREPL running this project, with `src` and `test`
+on the classpath. Use it the way a Clojure programmer would:
+
+- **Check before you write.** Before using a function, evaluate it on
+  a small value to see what it really returns. Use `(doc f)` and
+  `(source f)` instead of guessing an API.
+- **Load your changes.** After editing a file, evaluate
+  `(require 'the.namespace :reload)` before calling into it.
+- **Reproduce with values.** When something fails, capture the input
+  value and call the function with it in the REPL.
+- **Run one test namespace** with
+  `(clojure.test/run-tests 'soonish.core.schedule-test)`.
+- **Files are the truth.** Anything you define only in the REPL is
+  lost, and nobody can review it. Put every definition in a file.
+  `bin/check` runs outside the REPL, and it decides.
+- **No effects.** Use the REPL to compute, not to write files or
+  start processes. A hook blocks evaluations that look like they
+  change guard-rail files.
+- **Brackets.** If an edit leaves brackets you cannot balance in one
+  or two tries, use the `paren_repair` tool on the file. Do not loop
+  on manual fixes.
+
 ## Guard-rail files
 
-Only the owner changes these. Agent hooks block edits to them, and the
-pre-commit hook lists them when a commit touches them:
+Only the owner changes these, and agent hooks block edits to them:
 
 - `deps.edn`: ask before adding any dependency
 - `src/soonish/core/attrs.clj`: the attribute registry, which is the
   data model
 - `guard/`, `.clj-kondo/config.edn`, `.cljfmt.edn`: the checks
-- `bin/`, `.claude/`: the scripts and hooks
+- `bin/`, `.claude/`, `.mcp.json`: the scripts, hooks and agent
+  tools
 - `CONTRIBUTING.md` and `CLAUDE.md`: these rules
 
 If your work needs a change to one of them, stop and ask, and say
@@ -124,6 +149,11 @@ The core may require only other core namespaces and `clojure.edn`,
   to balance. **review**
 - Give every public function a docstring that says what it returns and
   what it requires of its arguments. **kondo**
+- Delete dead code. A public var in `src` that nothing in `src` or
+  `test` uses fails the check. Entry points that are used from outside
+  are listed in `guard/rules.edn`. Make a helper private with `defn-`
+  when it is not part of what the namespace offers; clj-kondo then
+  reports it when it falls out of use. **guard**, **kondo**
 - Describe problems as data. Return `{:schedule/cycle #{...}}` instead
   of throwing, when the caller can do something about it. Throw
   `ex-info` only for programming errors. **review**

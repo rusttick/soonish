@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Exits 0 when the path, relative to the project root, is a guard-rail
-# file that only the owner changes. The agent hooks and the pre-commit
-# hook both use this list.
+# file that only the owner changes. The agent hooks use this list.
 case "$1" in
   .claude/* | bin/* | guard/* | .clj-kondo/config.edn | .cljfmt.edn | \
-    deps.edn | CONTRIBUTING.md | CLAUDE.md | src/soonish/core/attrs.clj)
+    deps.edn | .mcp.json | CONTRIBUTING.md | CLAUDE.md | \
+    src/soonish/core/attrs.clj)
     exit 0
     ;;
   *)

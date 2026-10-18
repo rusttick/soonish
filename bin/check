@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Every check, in one place. Agents run it before they finish, and so does
-# the git pre-commit hook. It runs all checks, then reports which failed.
+# Every check, in one place. Agents run it before they finish, and the
+# owner runs it before each commit. It runs all checks, then reports
+# which failed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
